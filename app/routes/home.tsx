@@ -51,9 +51,7 @@ export default function Home() {
               <h3>Upload your floor plan</h3>
               <p>Supports JPG,PNG,formats upto 10MB</p>
             </div>
-            <p>
-              <Upload onComplete={handleUploadComplete} />
-            </p>
+            <Upload onComplete={handleUploadComplete} />
           </div>
         </div>
       </section>

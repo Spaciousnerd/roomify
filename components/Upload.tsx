@@ -18,9 +18,8 @@ const Upload = ({ onComplete }: UploadProps) => {
   const [progress, setProgress] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const readerRef = useRef<FileReader | null>(null);
   const { isSignedIn } = useOutletContext<AuthContext>();
-
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
@@ -31,10 +30,27 @@ const Upload = ({ onComplete }: UploadProps) => {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      if (readerRef.current) {
+        readerRef.current.abort();
+        readerRef.current = null;
+      }
     };
   }, []);
   const handleClearSelection = () => {
+    setProgress(0);
     setFile(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (readerRef.current) {
+      readerRef.current.abort();
+      readerRef.current = null;
+    }
   };
   const processFile = useCallback(
     (file: File) => {
@@ -44,13 +60,19 @@ const Upload = ({ onComplete }: UploadProps) => {
       setProgress(0);
 
       const reader = new FileReader();
+      readerRef.current = reader;
       reader.onerror = () => {
         setFile(null);
         setProgress(0);
       };
       reader.onloadend = () => {
-        const base64Data = reader.result as string;
-
+        if (typeof reader.result !== "string") {
+          setFile(null);
+          setProgress(0);
+          readerRef.current = null;
+          return;
+        }
+        const base64Data = reader.result;
         intervalRef.current = setInterval(() => {
           setProgress((prev) => {
             const next = prev + PROGRESS_INCREMENT;
