@@ -11,16 +11,18 @@ import {
 
 export const getOrCreateHostingConfig =
   async (): Promise<HostingConfig | null> => {
-    const existing = (await puter.kv.get(
-      HOSTING_CONFIG_KEY,
-    )) as HostingConfig | null;
-    if (existing?.subdomain) {
-      return { subdomain: existing.subdomain };
-    }
-    const subdomain = createHostingSlug();
     try {
+      const existing = (await puter.kv.get(
+        HOSTING_CONFIG_KEY,
+      )) as HostingConfig | null;
+      if (existing?.subdomain) {
+        return { subdomain: existing.subdomain };
+      }
+      const subdomain = createHostingSlug();
       const created = await puter.hosting.create(subdomain, ".");
-      return { subdomain: created.subdomain };
+      const record = { subdomain: created.subdomain };
+      await puter.kv.set(HOSTING_CONFIG_KEY, record);
+      return record;
     } catch (e) {
       console.warn(`Could not find sub-domain : ${e}`);
       return null;
